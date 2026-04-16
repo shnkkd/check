@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ตรวจสอบข้อมูล</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { 
+            font-family: 'Prompt', sans-serif; 
+        }
+        /* ปรับแต่ง Scrollbar ใน Modal ให้เป็นโทนพาสเทล */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fdf2f8; 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #fbcfe8; 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f472b6; 
+        }
+        /* Custom swal box */
+        .swal2-popup {
+            border-radius: 24px !important;
+            padding: 20px 10px !important;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#fdf4f6] via-[#f3f4fb] to-[#fcf5f7] min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white/70 backdrop-blur-xl border border-white rounded-[2rem] shadow-[0_20px_50px_rgba(8,-14,35,0.05)] p-10 max-w-md w-full text-center relative overflow-hidden">
+        
+        <div class="absolute -top-16 -right-16 w-32 h-32 bg-pink-100 rounded-full blur-3xl opacity-50"></div>
+        <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+
+        <div class="relative w-20 h-20 bg-gradient-to-tr from-pink-200 to-purple-200 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border-4 border-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        </div>
+        
+        <h2 class="text-2xl font-semibold text-gray-700 mb-2 relative z-10">ระบบตรวจสอบข้อมูล</h2>
+        <p class="text-gray-400 mb-8 text-sm relative z-10">กรุณากรอกรหัส 13 หลักเพื่อค้นหาประวัติในฐานข้อมูล</p>
+
+        <div class="space-y-4 relative z-10">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    maxlength="13"
+                    placeholder="เลข 13 หลัก"
+                    class="w-full bg-white border-2 border-pink-50 focus:border-purple-200 focus:ring-4 focus:ring-purple-50 rounded-2xl py-4 px-6 outline-none transition-all text-gray-600 tracking-[0.2em] text-center font-medium placeholder-gray-300 shadow-sm"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                >
+            </div>
+            
+            <button 
+                onclick="searchData()"
+                id="searchBtn"
+                class="w-full bg-gradient-to-r from-pink-300 to-purple-300 hover:from-pink-400 hover:to-purple-400 text-white rounded-2xl py-4 px-6 font-medium shadow-lg shadow-pink-200/50 hover:shadow-pink-300/50 transition-all transform hover:-translate-y-1 active:translate-y-0 flex justify-center items-center gap-2"
+            >
+                <span>ค้นหาเลย</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // รหัส ID ของ Google Sheet (ดึงมาจาก URL ที่คุณให้มา)
+        const SHEET_ID = '1ZU8SaKnjRnqj4d3WoENjgU5mlrWegwIvlUClXWJkbE0';
+        
+        // URL สำหรับดึงข้อมูลออกมาในรูปแบบ JSON (Gviz)
+        const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+        async function searchData() {
+            const inputVal = document.getElementById('searchInput').value.trim();
+            const btn = document.getElementById('searchBtn');
+
+            // บังคับให้ใส่ครบ 13 หลักเท่านั้น
+            if (inputVal.length !== 13) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ข้อมูลไม่ครบถ้วน',
+                    text: 'กรุณากรอกตัวเลขให้ครบ 13 หลัก',
+                    confirmButtonColor: '#f9a8d4' // สีชมพูพาสเทล
+                });
+                return;
+            }
+
+            // แสดงสถานะ Loading เปลี่ยนข้อความปุ่ม
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังค้นหา...';
+            btn.disabled = true;
+
+            try {
+                // ยิงไปขอข้อมูลจาก Google Sheets
+                const res = await fetch(URL);
+                const text = await res.text();
+                
+                // จัดการตัดข้อความส่วนเกินที่ Google แนบมาให้เหลือแต่โครงสร้าง JSON
+                const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+                const data = JSON.parse(jsonString);
+
+                // ดึงชื่อหัวคอลัมน์จาก Sheet และแปลงเป็นตัวเล็กเพื่อป้องกันปัญหาการพิมพ์ตัวเล็กตัวใหญ่
+                const cols = data.table.cols.map(c => c ? (c.label || '').toLowerCase().trim() : '');
+                const rows = data.table.rows;
+
+                // หาว่าคอลัมน์ 'cid' อยู่ที่ตำแหน่งไหน
+                const cidIndex = cols.findIndex(c => c === 'cid');
+                
+                if (cidIndex === -1) {
+                    Swal.fire('ตั้งค่าผิดพลาด', 'ไม่พบคอลัมน์ชื่อ cid ในบรรทัดแรกของ Sheet', 'error');
+                    resetButton(btn);
+                    return;
+                }
+
+                // วนลูปหาข้อมูลที่มีเลข cid ตรงกับที่ค้นหา
+                let foundRow = null;
+                for (let row of rows) {
+                    if (row.c && row.c[cidIndex]) {
+                        // เก็บค่าตัวแปร แปลงเป็น String เสมอ
+                        const cellValue = String(row.c[cidIndex].v || '').trim();
+                        if (cellValue === inputVal) {
+                            foundRow = row;
+                            break;
+                        }
+                    }
+                }
+
+                if (foundRow) {
+                    // หากเจอข้อมูล ให้สร้าง HTML ยัดใส่ใน Modal
+                    let htmlContent = '<div class="text-left space-y-3 mt-4 max-h-[50vh] overflow-y-auto px-2">';
+                    
+                    data.table.cols.forEach((col, idx) => {
+                        // ไม่แสดงคอลัมน์ cid (ตามความต้องการ) และ ข้ามคอลัมน์ที่ไม่มีชื่อหัวข้อ
+                        if (idx !== cidIndex && col.label) {
+                            
+                            const cellObj = foundRow.c[idx];
+                            // เช็คว่ามีข้อมูลไหม ถ้าไม่มีหรือเซลล์ว่าง ให้ใส่เครื่องหมาย '-'
+                            const value = (cellObj !== null && cellObj !== undefined && cellObj.v !== null) ? cellObj.v : '-';
+                            const colLabel = col.label;
+                            
+                            // ใช้ค่า f (formatted value) ถ้ามี (เช่น วันที่ หรือเงิน ที่จัดรูปแบบมาแล้ว)
+                            const displayValue = cellObj && cellObj.f ? cellObj.f : value;
+
+                            htmlContent += `
+                                <div class="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex flex-col hover:bg-pink-50/30 transition-colors">
+                                    <span class="text-[0.7rem] font-semibold text-purple-400 mb-1 tracking-wider">${colLabel}</span>
+                                    <span class="text-gray-700 text-[0.95rem]">${displayValue}</span>
+                                </div>
+                            `;
+                        }
+                    });
+                    htmlContent += '</div>';
+
+                    // แสดง Modal แบบพาสเทล
+                    Swal.fire({
+                        title: 'เจอข้อมูลในระบบ',
+                        html: htmlContent,
+                        icon: 'success',
+                        confirmButtonColor: '#d8b4e2',
+                        confirmButtonText: 'ปิดหน้าต่าง',
+                        showClass: {
+                            popup: 'animate__animated animate__fadeInUp animate__faster'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__fadeOutDown animate__faster'
+                        }
+                    });
+                } else {
+                    // ไม่พบข้อมูล
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่พบข้อมูล',
+                        text: `ไม่เจอประวัติผู้ใช้งานเลขประจำตัว ${inputVal}`,
+                        confirmButtonColor: '#f9a8d4'
+                    });
+                }
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อล้มเหลว',
+                    text: 'กรุณาตรวจสอบว่า Sheet ได้ตั้งค่าเป็น "ทุกคนที่มีลิงก์ (Anyone with link)" หรือไม่',
+                    confirmButtonColor: '#f9a8d4'
+                });
+            } finally {
+                resetButton(btn); // คืนค่าปุ่มกลับมาเหมือนเดิม
+            }
+        }
+
+        function resetButton(btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>ค้นหาเลย</span>';
+        }
+    </script>
+</body>
+</html>

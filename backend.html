@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend - เพิ่มข้อมูลระบบ</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .swal2-popup { border-radius: 16px !important; font-family: 'Sarabun', sans-serif !important; }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-slate-800 border border-slate-700 rounded-3xl shadow-2xl p-8 max-w-lg w-full text-left mx-auto">
+        <h2 class="text-3xl font-semibold text-white mb-2">Backend Management</h2>
+        <p class="text-slate-400 mb-8 text-sm">ระบบความปลอดภัยสูง (Server-side Authentication)</p>
+
+        <form id="addForm" class="space-y-5">
+            <div>
+                <label class="block text-slate-300 text-sm font-medium mb-2">เลขประจำตัว 13 หลัก</label>
+                <input type="text" name="cid" id="cid" maxlength="13" required
+                    class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-sm font-medium mb-2">ชื่อ - นามสกุล</label>
+                <input type="text" name="fullname" required
+                    class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-sm font-medium mb-2">รายละเอียดเพิ่มเติม / สถานะ</label>
+                <input type="text" name="details" required
+                    class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl py-3 px-4 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+            </div>
+            
+            <hr class="border-slate-600 my-4">
+
+            <div>
+                <label class="block text-pink-400 text-sm font-medium mb-2">🔒 รหัสผ่านแอดมิน (จำเป็น)</label>
+                <input type="password" name="adminPassword" required placeholder="กรอกรหัสผ่านเพื่อยืนยัน"
+                    class="w-full bg-slate-900 border border-pink-500/50 text-white rounded-xl py-3 px-4 outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition-all">
+            </div>
+            
+            <button type="submit" id="submitBtn"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-4 px-6 font-medium transition-all mt-4 flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                บันทึกข้อมูล
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // ใส่ URL ที่คุณได้มาจาก Google Apps Script เรียบร้อยแล้ว
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznVcofBPI1I2QxkMtHg6L4ofX4zVtVoFg5Vw4hC18Na7BidCmyLWsC069R-GqkYIid/exec';
+
+        document.getElementById('addForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); 
+            
+            const btn = document.getElementById('submitBtn');
+            const cidVal = document.getElementById('cid').value;
+
+            if (cidVal.length !== 13) {
+                Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกเลข 13 หลักให้ครบ', 'warning');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังตรวจสอบสิทธิ์...';
+
+            try {
+                const formData = new FormData(this);
+
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.text();
+
+                // เช็คคำตอบที่เซิร์ฟเวอร์ตอบกลับมา
+                if (result === 'Success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกสำเร็จ!',
+                        text: 'ข้อมูลถูกเพิ่มลงใน Google Sheet เรียบร้อยแล้ว',
+                        confirmButtonColor: '#2563eb'
+                    });
+                    this.reset(); 
+                } 
+                else if (result === 'WrongPassword') {
+                    // ถ้ารหัสผิด
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ปฏิเสธการเข้าถึง!',
+                        text: 'รหัสผ่านแอดมินไม่ถูกต้อง ข้อมูลไม่ได้ถูกบันทึก',
+                        confirmButtonColor: '#ef4444'
+                    });
+                    // ล้างเฉพาะช่องรหัสผ่าน
+                    document.querySelector('input[name="adminPassword"]').value = '';
+                } 
+                else {
+                    throw new Error('เกิดข้อผิดพลาดในการบันทึก');
+                }
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'บันทึกไม่สำเร็จ',
+                    text: 'ตรวจสอบ URL Apps Script หรือการเชื่อมต่ออินเทอร์เน็ต',
+                    confirmButtonColor: '#ef4444'
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> บันทึกข้อมูล';
+            }
+        });
+    </script>
+</body>
+</html>

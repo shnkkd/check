@@ -3,44 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ตรวจสอบข้อมูล</title>
+    <title>ระบบตรวจสอบข้อมูลคดี</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        body { 
-            font-family: 'Sarabun', sans-serif; 
-        }
-        /* ปรับแต่ง Scrollbar ใน Modal ให้เป็นโทนฟ้าน้ำเงิน */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #93c5fd; 
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3b82f6; 
-        }
-        /* Custom swal box */
-        .swal2-popup {
-            border-radius: 24px !important;
-            padding: 20px 10px !important;
-            font-family: 'Sarabun', sans-serif !important;
-        }
-        .swal2-title {
-            font-size: 1.5rem !important;
-        }
-        .swal2-html-container {
-            font-size: 1.1rem !important;
-        }
+        body { font-family: 'Sarabun', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+        .swal2-popup { border-radius: 24px !important; font-family: 'Sarabun', sans-serif !important; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] min-h-screen flex items-center justify-center p-4">
@@ -56,7 +31,7 @@
             </svg>
         </div>
         
-        <h2 class="text-3xl font-semibold text-slate-800 mb-2 relative z-10">ระบบตรวจสอบข้อมูล</h2>
+        <h2 class="text-3xl font-semibold text-slate-800 mb-2 relative z-10">ตรวจสอบสถานะคดี</h2>
         <p class="text-slate-500 mb-8 text-base relative z-10">กรุณากรอกรหัส 13 หลักเพื่อค้นหาประวัติ</p>
 
         <div class="space-y-4 relative z-10">
@@ -66,7 +41,7 @@
                     id="searchInput" 
                     maxlength="13"
                     placeholder="เลขประจำตัว 13 หลัก"
-                    class="w-full bg-white border-2 border-blue-50 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 rounded-2xl py-4 px-6 outline-none transition-all text-slate-700 tracking-[0.15em] text-center font-medium placeholder-slate-300 shadow-sm text-lg"
+                    class="w-full bg-white border-2 border-blue-50 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 rounded-2xl py-4 px-6 outline-none transition-all text-slate-700 tracking-[0.15em] text-center font-bold placeholder-slate-300 shadow-sm text-lg"
                     oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                 >
             </div>
@@ -74,9 +49,9 @@
             <button 
                 onclick="searchData()"
                 id="searchBtn"
-                class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl py-4 px-6 font-medium shadow-lg shadow-blue-300/50 hover:shadow-blue-400/50 transition-all transform hover:-translate-y-1 active:translate-y-0 flex justify-center items-center gap-2 text-lg"
+                class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white rounded-2xl py-4 px-6 font-bold shadow-lg shadow-blue-300/50 hover:shadow-blue-400/50 transition-all transform hover:-translate-y-1 active:translate-y-0 flex justify-center items-center gap-2 text-lg"
             >
-                <span>ค้นหาข้อมูล</span>
+                <span>ค้นหาสถานะ</span>
             </button>
         </div>
     </div>
@@ -84,56 +59,52 @@
     <script>
         // รหัส ID ของ Google Sheet
         const SHEET_ID = '1ZU8SaKnjRnqj4d3WoENjgU5mlrWegwIvlUClXWJkbE0';
-        
-        // URL สำหรับดึงข้อมูลออกมาในรูปแบบ JSON (Gviz)
         const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+        // ตัวแปรเก็บข้อมูลที่พบเพื่อส่งต่อไปยังหน้าต่างรายละเอียด
+        let currentFoundRow = null;
+        let currentCols = null;
 
         async function searchData() {
             const inputVal = document.getElementById('searchInput').value.trim();
             const btn = document.getElementById('searchBtn');
 
-            // บังคับให้ใส่ครบ 13 หลักเท่านั้น
             if (inputVal.length !== 13) {
-                Swal.fire({
+                return Swal.fire({
                     icon: 'warning',
                     title: 'ข้อมูลไม่ครบถ้วน',
                     text: 'กรุณากรอกตัวเลขให้ครบ 13 หลัก',
-                    confirmButtonColor: '#3b82f6' // สีฟ้า Blue-500
+                    confirmButtonColor: '#3b82f6' 
                 });
-                return;
             }
 
-            // แสดงสถานะ Loading เปลี่ยนข้อความปุ่ม
             btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังค้นหา...';
             btn.disabled = true;
 
             try {
-                // ยิงไปขอข้อมูลจาก Google Sheets
                 const res = await fetch(URL);
                 const text = await res.text();
-                
-                // จัดการตัดข้อความส่วนเกินที่ Google แนบมาให้เหลือแต่โครงสร้าง JSON
                 const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
                 const data = JSON.parse(jsonString);
 
-                // ดึงชื่อหัวคอลัมน์จาก Sheet และแปลงเป็นตัวเล็กเพื่อป้องกันปัญหาการพิมพ์ตัวเล็กตัวใหญ่
-                const cols = data.table.cols.map(c => c ? (c.label || '').toLowerCase().trim() : '');
+                const cols = data.table.cols.map(c => c ? (c.label || '').trim() : '');
                 const rows = data.table.rows;
 
-                // หาว่าคอลัมน์ 'cid' อยู่ที่ตำแหน่งไหน
-                const cidIndex = cols.findIndex(c => c === 'cid');
-                
+                // หา index ของคอลัมน์สำคัญ (แปลงชื่อให้ตรงกับที่คุณแจ้ง)
+                const cidIndex = cols.findIndex(c => c.toLowerCase() === 'cid');
+                const nameIndex = cols.findIndex(c => c === 'ชื่อ - สกุล');
+                const docReceiveIndex = cols.findIndex(c => c === 'วันที่รับเอกสาร');
+                const docFinishIndex = cols.findIndex(c => c === 'วันที่เสร็จ');
+                const policePickupIndex = cols.findIndex(c => c === 'วันที่ตำรวจมารับใบคดี');
+
                 if (cidIndex === -1) {
-                    Swal.fire('ตั้งค่าผิดพลาด', 'ไม่พบคอลัมน์ชื่อ cid ในบรรทัดแรกของ Sheet', 'error');
-                    resetButton(btn);
-                    return;
+                    Swal.fire('ตั้งค่าผิดพลาด', 'ไม่พบคอลัมน์ชื่อ CID ในบรรทัดแรกของ Sheet', 'error');
+                    return resetButton(btn);
                 }
 
-                // วนลูปหาข้อมูลที่มีเลข cid ตรงกับที่ค้นหา
                 let foundRow = null;
                 for (let row of rows) {
                     if (row.c && row.c[cidIndex]) {
-                        // เก็บค่าตัวแปร แปลงเป็น String เสมอ
                         const cellValue = String(row.c[cidIndex].v || '').trim();
                         if (cellValue === inputVal) {
                             foundRow = row;
@@ -143,71 +114,114 @@
                 }
 
                 if (foundRow) {
-                    // หากเจอข้อมูล ให้สร้าง HTML ยัดใส่ใน Modal
-                    let htmlContent = '<div class="text-left space-y-3 mt-4 max-h-[50vh] overflow-y-auto px-2">';
-                    
-                    data.table.cols.forEach((col, idx) => {
-                        // ไม่แสดงคอลัมน์ cid (ตามความต้องการ) และ ข้ามคอลัมน์ที่ไม่มีชื่อหัวข้อ
-                        if (idx !== cidIndex && col.label) {
-                            
-                            const cellObj = foundRow.c[idx];
-                            // เช็คว่ามีข้อมูลไหม ถ้าไม่มีหรือเซลล์ว่าง ให้ใส่เครื่องหมาย '-'
-                            const value = (cellObj !== null && cellObj !== undefined && cellObj.v !== null) ? cellObj.v : '-';
-                            const colLabel = col.label;
-                            
-                            // ใช้ค่า f (formatted value) ถ้ามี (เช่น วันที่ หรือเงิน ที่จัดรูปแบบมาแล้ว)
-                            const displayValue = cellObj && cellObj.f ? cellObj.f : value;
+                    // เก็บข้อมูลไว้เผื่อผู้ใช้กดดูรายละเอียด
+                    currentFoundRow = foundRow;
+                    currentCols = cols;
 
-                            htmlContent += `
-                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col hover:bg-blue-50 transition-colors">
-                                    <span class="text-[0.9rem] font-semibold text-blue-600 mb-1 tracking-wide">${colLabel}</span>
-                                    <span class="text-slate-700 text-[1.1rem]">${displayValue}</span>
-                                </div>
-                            `;
-                        }
-                    });
-                    htmlContent += '</div>';
+                    // ดึงชื่อ-สกุล
+                    const fullName = (foundRow.c[nameIndex] && foundRow.c[nameIndex].v) ? foundRow.c[nameIndex].v : 'ไม่ระบุชื่อ';
 
-                    // แสดง Modal แบบฟ้าน้ำเงิน
+                    // คำนวณสถานะ (เช็คจากหลังสุดไปหน้าสุด)
+                    let statusText = 'รอดำเนินการ';
+                    let statusColor = 'text-slate-500 bg-slate-100';
+
+                    // มีวันที่ตำรวจมารับ
+                    if (policePickupIndex !== -1 && foundRow.c[policePickupIndex] && foundRow.c[policePickupIndex].v) {
+                        statusText = 'ตำรวจมารับใบคดีแล้ว';
+                        statusColor = 'text-green-700 bg-green-100 border-green-200';
+                    } 
+                    // มีวันที่เสร็จ
+                    else if (docFinishIndex !== -1 && foundRow.c[docFinishIndex] && foundRow.c[docFinishIndex].v) {
+                        statusText = 'เอกสารเสร็จเรียบร้อย';
+                        statusColor = 'text-blue-700 bg-blue-100 border-blue-200';
+                    } 
+                    // มีวันที่รับเอกสาร
+                    else if (docReceiveIndex !== -1 && foundRow.c[docReceiveIndex] && foundRow.c[docReceiveIndex].v) {
+                        statusText = 'รับเอกสารแล้ว';
+                        statusColor = 'text-amber-700 bg-amber-100 border-amber-200';
+                    }
+
+                    // แสดงหน้าต่างสรุปย่อ
                     Swal.fire({
-                        title: 'เจอข้อมูลในระบบ',
-                        html: htmlContent,
-                        icon: 'success',
-                        confirmButtonColor: '#2563eb', // Blue-600
-                        confirmButtonText: 'ปิดหน้าต่าง',
-                        showClass: {
-                            popup: 'animate__animated animate__fadeInUp animate__faster'
-                        },
-                        hideClass: {
-                            popup: 'animate__animated animate__fadeOutDown animate__faster'
+                        title: 'พบข้อมูลในระบบ',
+                        html: `
+                            <div class="mt-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-500 mb-1">ชื่อ - สกุล</p>
+                                    <p class="text-xl font-bold text-slate-800">${fullName}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-500 mb-2">สถานะปัจจุบัน</p>
+                                    <div class="inline-block px-4 py-2 rounded-xl border font-semibold ${statusColor}">
+                                        ${statusText}
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonColor: '#3b82f6',
+                        cancelButtonColor: '#cbd5e1',
+                        confirmButtonText: 'ดูรายละเอียดทั้งหมด',
+                        cancelButtonText: 'ปิด',
+                        reverseButtons: true
+                    }).then((result) => {
+                        // ถ้าผู้ใช้กดปุ่มดูรายละเอียด
+                        if (result.isConfirmed) {
+                            showFullDetails(cidIndex);
                         }
                     });
+
                 } else {
-                    // ไม่พบข้อมูล
                     Swal.fire({
                         icon: 'error',
                         title: 'ไม่พบข้อมูล',
                         text: `ไม่เจอประวัติเลขประจำตัว ${inputVal}`,
-                        confirmButtonColor: '#ef4444' // แดง (มาตรฐานสำหรับการไม่พบข้อมูล)
+                        confirmButtonColor: '#ef4444'
                     });
                 }
 
             } catch (err) {
                 console.error(err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'เชื่อมต่อล้มเหลว',
-                    text: 'กรุณาตรวจสอบว่า Sheet ได้ตั้งค่าเป็น "ทุกคนที่มีลิงก์ (Anyone with link)" หรือไม่',
-                    confirmButtonColor: '#ef4444'
-                });
+                Swal.fire('เชื่อมต่อล้มเหลว', 'กรุณาตรวจสอบว่า Sheet ได้ตั้งค่าเป็น "Anyone with link" หรือไม่', 'error');
             } finally {
-                resetButton(btn); // คืนค่าปุ่มกลับมาเหมือนเดิม
+                resetButton(btn);
             }
+        }
+
+        function showFullDetails(cidIndex) {
+            let htmlContent = '<div class="text-left space-y-3 mt-4 max-h-[60vh] overflow-y-auto px-2">';
+            
+            currentCols.forEach((colLabel, idx) => {
+                // ข้ามคอลัมน์ CID และคอลัมน์ที่ไม่มีชื่อหัวข้อ
+                if (idx !== cidIndex && colLabel) {
+                    const cellObj = currentFoundRow.c[idx];
+                    const value = (cellObj !== null && cellObj !== undefined && cellObj.v !== null) ? cellObj.v : '-';
+                    const displayValue = cellObj && cellObj.f ? cellObj.f : value; // ใช้ค่าที่ Format แล้วถ้ามี (เช่น วันที่)
+
+                    htmlContent += `
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col hover:bg-blue-50 transition-colors">
+                            <span class="text-[0.85rem] font-semibold text-blue-600 mb-1 tracking-wide">${colLabel}</span>
+                            <span class="text-slate-800 text-lg">${displayValue}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            htmlContent += '</div>';
+
+            Swal.fire({
+                title: 'รายละเอียดข้อมูล',
+                html: htmlContent,
+                width: '600px',
+                confirmButtonColor: '#3b82f6',
+                confirmButtonText: 'กลับ',
+                showClass: { popup: 'animate__animated animate__fadeInIn animate__faster' }
+            });
         }
 
         function resetButton(btn) {
             btn.disabled = false;
-            btn.innerHTML = '<span>ค้นหาข้อมูล</span>';
+            btn.innerHTML = '<span>ค้นหาสถานะ</span>';
         }
     </script>
 </body>

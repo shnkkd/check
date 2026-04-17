@@ -16,6 +16,8 @@
         ::-webkit-scrollbar-thumb { background: #93c5fd; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
         .swal2-popup { border-radius: 24px !important; font-family: 'Sarabun', sans-serif !important; }
+        /* ซ่อนขอบปุ่มเวลากด */
+        button:focus { outline: none !important; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#bae6fd] min-h-screen flex items-center justify-center p-4">
@@ -32,7 +34,7 @@
         </div>
         
         <h2 class="text-3xl font-semibold text-slate-800 mb-2 relative z-10">ตรวจสอบสถานะคดี</h2>
-        <p class="text-slate-500 mb-8 text-base relative z-10">กรุณากรอกรหัส 13 หลักเพื่อค้นหาประวัติ</p>
+        <p class="text-slate-500 mb-8 text-base relative z-10">กรุณากรอกรหัส 13 หลักเพื่อค้นหาประวัติทั้งหมด</p>
 
         <div class="space-y-4 relative z-10">
             <div class="relative">
@@ -57,25 +59,20 @@
     </div>
 
     <script>
-        // รหัส ID ของ Google Sheet
         const SHEET_ID = '1ZU8SaKnjRnqj4d3WoENjgU5mlrWegwIvlUClXWJkbE0';
         const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
-        // ตัวแปรเก็บข้อมูลที่พบเพื่อส่งต่อไปยังหน้าต่างรายละเอียด
-        let currentFoundRow = null;
-        let currentCols = null;
+        // ตัวแปรส่วนกลางสำหรับเก็บข้อมูลที่เจอทั้งหมด
+        let globalFoundRows = [];
+        let globalCols = [];
+        let globalCidIndex = -1;
 
         async function searchData() {
             const inputVal = document.getElementById('searchInput').value.trim();
             const btn = document.getElementById('searchBtn');
 
             if (inputVal.length !== 13) {
-                return Swal.fire({
-                    icon: 'warning',
-                    title: 'ข้อมูลไม่ครบถ้วน',
-                    text: 'กรุณากรอกตัวเลขให้ครบ 13 หลัก',
-                    confirmButtonColor: '#3b82f6' 
-                });
+                return Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบถ้วน', text: 'กรุณากรอกตัวเลขให้ครบ 13 หลัก', confirmButtonColor: '#3b82f6' });
             }
 
             btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังค้นหา...';
@@ -90,132 +87,149 @@
                 const cols = data.table.cols.map(c => c ? (c.label || '').trim() : '');
                 const rows = data.table.rows;
 
-                // หา index ของคอลัมน์สำคัญ (แปลงชื่อให้ตรงกับที่คุณแจ้ง)
                 const cidIndex = cols.findIndex(c => c.toLowerCase() === 'cid');
-                const nameIndex = cols.findIndex(c => c === 'ชื่อ - สกุล');
-                const docReceiveIndex = cols.findIndex(c => c === 'วันที่รับเอกสาร');
-                const docFinishIndex = cols.findIndex(c => c === 'วันที่เสร็จ');
-                const policePickupIndex = cols.findIndex(c => c === 'วันที่ตำรวจมารับใบคดี');
-
                 if (cidIndex === -1) {
                     Swal.fire('ตั้งค่าผิดพลาด', 'ไม่พบคอลัมน์ชื่อ CID ในบรรทัดแรกของ Sheet', 'error');
                     return resetButton(btn);
                 }
 
-                let foundRow = null;
+                // ค้นหาทุกแถวที่มี CID ตรงกัน
+                let foundRows = [];
                 for (let row of rows) {
                     if (row.c && row.c[cidIndex]) {
                         const cellValue = String(row.c[cidIndex].v || '').trim();
                         if (cellValue === inputVal) {
-                            foundRow = row;
-                            break;
+                            foundRows.push(row);
                         }
                     }
                 }
 
-                if (foundRow) {
-                    // เก็บข้อมูลไว้เผื่อผู้ใช้กดดูรายละเอียด
-                    currentFoundRow = foundRow;
-                    currentCols = cols;
-
-                    // ดึงชื่อ-สกุล
-                    const fullName = (foundRow.c[nameIndex] && foundRow.c[nameIndex].v) ? foundRow.c[nameIndex].v : 'ไม่ระบุชื่อ';
-
-                    // คำนวณสถานะ (เช็คจากหลังสุดไปหน้าสุด)
-                    let statusText = 'รอดำเนินการ';
-                    let statusColor = 'text-slate-500 bg-slate-100';
-
-                    // มีวันที่ตำรวจมารับ
-                    if (policePickupIndex !== -1 && foundRow.c[policePickupIndex] && foundRow.c[policePickupIndex].v) {
-                        statusText = 'ตำรวจมารับใบคดีแล้ว';
-                        statusColor = 'text-green-700 bg-green-100 border-green-200';
-                    } 
-                    // มีวันที่เสร็จ
-                    else if (docFinishIndex !== -1 && foundRow.c[docFinishIndex] && foundRow.c[docFinishIndex].v) {
-                        statusText = 'เอกสารเสร็จเรียบร้อย';
-                        statusColor = 'text-blue-700 bg-blue-100 border-blue-200';
-                    } 
-                    // มีวันที่รับเอกสาร
-                    else if (docReceiveIndex !== -1 && foundRow.c[docReceiveIndex] && foundRow.c[docReceiveIndex].v) {
-                        statusText = 'รับเอกสารแล้ว';
-                        statusColor = 'text-amber-700 bg-amber-100 border-amber-200';
-                    }
-
-                    // แสดงหน้าต่างสรุปย่อ
-                    Swal.fire({
-                        title: 'พบข้อมูลในระบบ',
-                        html: `
-                            <div class="mt-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-4">
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-500 mb-1">ชื่อ - สกุล</p>
-                                    <p class="text-xl font-bold text-slate-800">${fullName}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-500 mb-2">สถานะปัจจุบัน</p>
-                                    <div class="inline-block px-4 py-2 rounded-xl border font-semibold ${statusColor}">
-                                        ${statusText}
-                                    </div>
-                                </div>
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonColor: '#3b82f6',
-                        cancelButtonColor: '#cbd5e1',
-                        confirmButtonText: 'ดูรายละเอียดทั้งหมด',
-                        cancelButtonText: 'ปิด',
-                        reverseButtons: true
-                    }).then((result) => {
-                        // ถ้าผู้ใช้กดปุ่มดูรายละเอียด
-                        if (result.isConfirmed) {
-                            showFullDetails(cidIndex);
-                        }
-                    });
-
+                if (foundRows.length > 0) {
+                    // เก็บค่าไว้ใช้ข้ามฟังก์ชัน
+                    globalFoundRows = foundRows;
+                    globalCols = cols;
+                    globalCidIndex = cidIndex;
+                    
+                    showResultList(); // เรียกฟังก์ชันแสดงหน้ารวม
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'ไม่พบข้อมูล',
-                        text: `ไม่เจอประวัติเลขประจำตัว ${inputVal}`,
-                        confirmButtonColor: '#ef4444'
-                    });
+                    Swal.fire({ icon: 'error', title: 'ไม่พบข้อมูล', text: `ไม่เจอประวัติเลขประจำตัว ${inputVal}`, confirmButtonColor: '#ef4444' });
                 }
 
             } catch (err) {
                 console.error(err);
-                Swal.fire('เชื่อมต่อล้มเหลว', 'กรุณาตรวจสอบว่า Sheet ได้ตั้งค่าเป็น "Anyone with link" หรือไม่', 'error');
+                Swal.fire('เชื่อมต่อล้มเหลว', 'กรุณาตรวจสอบการตั้งค่า Google Sheet', 'error');
             } finally {
                 resetButton(btn);
             }
         }
 
-        function showFullDetails(cidIndex) {
-            let htmlContent = '<div class="text-left space-y-3 mt-4 max-h-[60vh] overflow-y-auto px-2">';
+        // ฟังก์ชัน 1: แสดงรายการประวัติทั้งหมดที่ค้นเจอ (เป็นลิสต์)
+        function showResultList() {
+            const nameIndex = globalCols.findIndex(c => c === 'ชื่อ - สกุล');
+            const dateCheckIndex = globalCols.findIndex(c => c === 'วันที่ตรวจ');
+            const docReceiveIndex = globalCols.findIndex(c => c === 'วันที่รับเอกสาร');
+            const docFinishIndex = globalCols.findIndex(c => c === 'วันที่เสร็จ');
+            const policePickupIndex = globalCols.findIndex(c => c === 'วันที่ตำรวจมารับใบคดี');
+
+            let htmlContent = `<div class="mt-2 text-left space-y-3 max-h-[60vh] overflow-y-auto px-1 pb-2">`;
             
-            currentCols.forEach((colLabel, idx) => {
+            // แสดงจำนวนคดีที่เจอ
+            htmlContent += `<p class="text-sm font-semibold text-slate-500 text-center mb-4">พบประวัติทั้งหมด ${globalFoundRows.length} รายการ</p>`;
+
+            globalFoundRows.forEach((row, index) => {
+                const fullName = (row.c[nameIndex] && row.c[nameIndex].v) ? row.c[nameIndex].v : 'ไม่ระบุชื่อ';
+                
+                // ดึงวันที่ตรวจ
+                const checkDateObj = row.c[dateCheckIndex];
+                const checkDate = (checkDateObj && checkDateObj.f) ? checkDateObj.f : (checkDateObj && checkDateObj.v) ? checkDateObj.v : 'ไม่ระบุวันที่ตรวจ';
+
+                // คำนวณสถานะ
+                let statusText = 'รอดำเนินการ';
+                let statusColor = 'text-slate-600 bg-slate-100 border-slate-200';
+
+                if (policePickupIndex !== -1 && row.c[policePickupIndex] && row.c[policePickupIndex].v) {
+                    statusText = 'ตำรวจมารับใบคดีแล้ว';
+                    statusColor = 'text-green-700 bg-green-50 border-green-200';
+                } else if (docFinishIndex !== -1 && row.c[docFinishIndex] && row.c[docFinishIndex].v) {
+                    statusText = 'เอกสารเสร็จเรียบร้อย';
+                    statusColor = 'text-blue-700 bg-blue-50 border-blue-200';
+                } else if (docReceiveIndex !== -1 && row.c[docReceiveIndex] && row.c[docReceiveIndex].v) {
+                    statusText = 'รับเอกสารแล้ว';
+                    statusColor = 'text-amber-700 bg-amber-50 border-amber-200';
+                }
+
+                // สร้างการ์ดแต่ละใบ (กดได้)
+                htmlContent += `
+                    <div onclick="showFullDetails(${index})" class="bg-white p-5 rounded-2xl border-2 border-slate-100 shadow-sm hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer transition-all transform active:scale-[0.98]">
+                        <div class="flex flex-col mb-3">
+                            <span class="self-start text-[0.8rem] font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full mb-2 tracking-wide">
+                                📅 วันที่ตรวจ: ${checkDate}
+                            </span>
+                            <span class="text-lg font-bold text-slate-800">${fullName}</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <p class="text-[0.7rem] font-semibold text-slate-400 mb-1">สถานะล่าสุด</p>
+                                <div class="inline-block px-3 py-1 rounded-xl border text-sm font-semibold ${statusColor}">
+                                    ${statusText}
+                                </div>
+                            </div>
+                            <span class="text-blue-500 font-bold text-sm bg-white border border-blue-100 px-3 py-1.5 rounded-xl">ดูข้อมูล &rarr;</span>
+                        </div>
+                    </div>
+                `;
+            });
+            htmlContent += `</div>`;
+
+            Swal.fire({
+                title: 'ผลการค้นหา',
+                html: htmlContent,
+                showConfirmButton: true,
+                confirmButtonText: 'ปิดหน้าต่าง',
+                confirmButtonColor: '#cbd5e1',
+                width: '500px'
+            });
+        }
+
+        // ฟังก์ชัน 2: แสดงรายละเอียดแบบเจาะจง (เมื่อกดเข้าการ์ด)
+        function showFullDetails(rowIndex) {
+            const targetRow = globalFoundRows[rowIndex];
+            let htmlContent = '<div class="text-left space-y-3 mt-4 max-h-[60vh] overflow-y-auto px-2 pb-2">';
+            
+            globalCols.forEach((colLabel, idx) => {
                 // ข้ามคอลัมน์ CID และคอลัมน์ที่ไม่มีชื่อหัวข้อ
-                if (idx !== cidIndex && colLabel) {
-                    const cellObj = currentFoundRow.c[idx];
+                if (idx !== globalCidIndex && colLabel) {
+                    const cellObj = targetRow.c[idx];
                     const value = (cellObj !== null && cellObj !== undefined && cellObj.v !== null) ? cellObj.v : '-';
-                    const displayValue = cellObj && cellObj.f ? cellObj.f : value; // ใช้ค่าที่ Format แล้วถ้ามี (เช่น วันที่)
+                    const displayValue = cellObj && cellObj.f ? cellObj.f : value; 
 
                     htmlContent += `
-                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col hover:bg-blue-50 transition-colors">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col">
                             <span class="text-[0.85rem] font-semibold text-blue-600 mb-1 tracking-wide">${colLabel}</span>
                             <span class="text-slate-800 text-lg">${displayValue}</span>
                         </div>
                     `;
                 }
             });
-            
             htmlContent += '</div>';
 
             Swal.fire({
-                title: 'รายละเอียดข้อมูล',
+                title: 'รายละเอียดคดี',
                 html: htmlContent,
                 width: '600px',
-                confirmButtonColor: '#3b82f6',
-                confirmButtonText: 'กลับ',
-                showClass: { popup: 'animate__animated animate__fadeInIn animate__faster' }
+                showCancelButton: true,
+                confirmButtonColor: '#cbd5e1',
+                cancelButtonColor: '#3b82f6',
+                confirmButtonText: 'ปิดหน้าต่าง',
+                cancelButtonText: 'ย้อนกลับไปหน้ารวม',
+                reverseButtons: true,
+                showClass: { popup: 'animate__animated animate__fadeInRight animate__faster' },
+                hideClass: { popup: 'animate__animated animate__fadeOutRight animate__faster' }
+            }).then((result) => {
+                // ถ้ากดปุ่ม 'ย้อนกลับไปหน้ารวม' (ซึ่งคือปุ่ม Cancel ในเชิงเทคนิค) ให้แสดงหน้ารวมใหม่
+                if (result.dismiss === Swal.DismissReason.cancel) {
+                    showResultList();
+                }
             });
         }
 

@@ -10,7 +10,6 @@
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
         .swal2-popup { border-radius: 16px !important; font-family: 'Sarabun', sans-serif !important; }
-        /* ปรับแต่ง Scrollbar ของตารางให้ดูดีและเลื่อนง่ายขึ้น */
         .custom-scrollbar::-webkit-scrollbar { height: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -21,7 +20,7 @@
 
     <div id="loginSection" class="fixed inset-0 bg-slate-900/95 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-slate-200">
-            <h2 class="text-2xl font-bold text-center mb-6 text-slate-800">เข้าสู่ระบบ</h2>
+            <h2 class="text-2xl font-bold text-center mb-6 text-slate-800">เข้าสู่ระบบหลังบ้าน</h2>
             <form onsubmit="event.preventDefault(); checkPass();">
                 <input type="password" id="adminPass" placeholder="รหัสผ่านแอดมิน" required
                     class="w-full p-4 border border-slate-300 rounded-xl mb-4 text-center text-lg outline-none focus:border-blue-500 transition-all">
@@ -30,22 +29,20 @@
         </div>
     </div>
 
-    <div id="mainDashboard" class="hidden container mx-auto p-4 md:p-8 max-w-7xl">
+    <div id="mainDashboard" class="hidden container mx-auto p-4 md:p-8 max-w-[95%]">
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">ระบบบันทึกข้อมูลคดี</h1>
                 <p class="text-slate-500">จัดการข้อมูลหน้าละ 10 รายการ</p>
             </div>
-            <button onclick="openModal()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95">
+            <button onclick="openModalForAdd()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all active:scale-95">
                 + เพิ่มข้อมูลใหม่
             </button>
         </div>
 
         <div class="mb-6 relative">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
             <input type="text" id="searchInput" oninput="handleSearch()" 
                 placeholder="ค้นหาด่วนด้วย ชื่อ-สกุล หรือ เลขบัตรประชาชน (CID)..." 
@@ -54,20 +51,23 @@
 
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
             <div class="overflow-x-auto custom-scrollbar pb-2">
-                <table class="w-full text-left border-collapse min-w-[1200px]">
+                <table class="w-full text-left border-collapse min-w-[1400px]">
                     <thead class="bg-slate-800 text-white">
                         <tr>
-                            <th class="p-4 whitespace-nowrap">วันที่ตรวจ</th>
-                            <th class="p-4 whitespace-nowrap">วันที่รับใบคดี</th>
-                            <th class="p-4 whitespace-nowrap">ชื่อ - สกุล</th>
-                            <th class="p-4 whitespace-nowrap w-1/3">สาเหตุ</th>
-                            <th class="p-4 whitespace-nowrap">แพทย์ผู้ตรวจ</th>
-                            <th class="p-4 whitespace-nowrap">ตำรวจเจ้าของเคส</th>
-                            <th class="p-4 whitespace-nowrap">cid</th>
+                            <th class="p-3 whitespace-nowrap text-sm">วันที่ตรวจ</th>
+                            <th class="p-3 whitespace-nowrap text-sm">วันที่รับเอกสาร</th>
+                            <th class="p-3 whitespace-nowrap text-sm">วันที่เสร็จ</th>
+                            <th class="p-3 whitespace-nowrap text-sm">วันที่ตำรวจมารับ</th>
+                            <th class="p-3 whitespace-nowrap text-sm">ชื่อ - สกุล</th>
+                            <th class="p-3 whitespace-nowrap w-1/4 text-sm">สาเหตุ</th>
+                            <th class="p-3 whitespace-nowrap text-sm">แพทย์ผู้ตรวจ</th>
+                            <th class="p-3 whitespace-nowrap text-sm">ตำรวจเจ้าของเคส</th>
+                            <th class="p-3 whitespace-nowrap text-sm">CID</th>
+                            <th class="p-3 whitespace-nowrap text-sm text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="text-slate-700 divide-y divide-slate-100">
-                        <tr><td colspan="7" class="p-8 text-center text-slate-400">กำลังโหลดข้อมูล...</td></tr>
+                        <tr><td colspan="10" class="p-8 text-center text-slate-400">กำลังโหลดข้อมูล...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -76,17 +76,23 @@
     </div>
 
     <div id="addModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-40 p-4 backdrop-blur-sm overflow-y-auto">
-        <div class="bg-white rounded-3xl p-8 w-full max-w-2xl shadow-2xl my-auto">
-            <h3 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-4">บันทึกข้อมูลใหม่</h3>
-            <form id="addForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">วันที่ตรวจ</label><input type="date" name="dateCheck" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
-                <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">วันที่รับใบคดี</label><input type="date" name="dateReceipt" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
-                <div class="col-span-full flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">ชื่อ - สกุล</label><input type="text" name="fullname" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
+        <div class="bg-white rounded-3xl p-8 w-full max-w-3xl shadow-2xl my-auto">
+            <h3 id="modalTitle" class="text-2xl font-bold text-slate-800 mb-6 border-b pb-4">บันทึกข้อมูลใหม่</h3>
+            <form id="dataForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">วันที่ตรวจ</label><input type="date" name="dateCheck" class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
+                <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">วันที่รับเอกสาร</label><input type="date" name="dateReceipt" class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
+                <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">วันที่เสร็จ</label><input type="date" name="dateFinish" class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
+                <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">วันที่ตำรวจมารับใบคดี</label><input type="date" name="datePolice" class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
+                
+                <div class="col-span-full flex flex-col mt-2"><label class="text-sm font-bold text-slate-600 mb-1">ชื่อ - สกุล</label><input type="text" name="fullname" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
                 <div class="col-span-full flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">สาเหตุ</label><input type="text" name="reason" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
+                
                 <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">แพทย์ผู้ตรวจ</label><input type="text" name="doctor" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
                 <div class="flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">ตำรวจเจ้าของเคส</label><input type="text" name="police" required class="border p-3 rounded-xl outline-none focus:border-blue-500"></div>
                 <div class="col-span-full flex flex-col"><label class="text-sm font-bold text-slate-600 mb-1">เลขบัตรประชาชน (cid) 13 หลัก</label><input type="text" name="cid" maxlength="13" required oninput="this.value = this.value.replace(/[^0-9]/g, '')" class="border p-3 rounded-xl outline-none focus:border-blue-500 text-lg font-mono"></div>
-                <div class="col-span-full flex gap-3 mt-4">
+                
+                <div class="col-span-full flex gap-3 mt-4 border-t pt-4">
                     <button type="submit" class="flex-1 bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700">บันทึกข้อมูล</button>
                     <button type="button" onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-xl font-bold hover:bg-slate-200">ยกเลิก</button>
                 </div>
@@ -101,6 +107,9 @@
         let currentPage = 1;
         const rowsPerPage = 10; 
         let sessionPassword = '';
+        
+        // ตัวแปรเก็บไว้เช็คว่ากำลัง "เพิ่ม" หรือ "แก้ไข"
+        let currentEditRowIndex = null; 
 
         async function checkPass() {
             const passInput = document.getElementById('adminPass').value;
@@ -115,7 +124,7 @@
                 if (result.status === 'Success') {
                     Swal.close();
                     sessionPassword = passInput;
-                    allData = result.rows.reverse();
+                    allData = result.rows.reverse(); // เรียงข้อมูลล่าสุดขึ้นก่อน
                     filteredData = [...allData]; 
                     document.getElementById('loginSection').classList.add('hidden');
                     document.getElementById('mainDashboard').classList.remove('hidden');
@@ -124,15 +133,15 @@
                     Swal.fire('ผิดพลาด', 'รหัสผ่านไม่ถูกต้อง หรือสิทธิ์เข้าถึงไม่ถูกต้อง', 'error');
                 }
             } catch(e) {
-                Swal.fire('เชื่อมต่อล้มเหลว', 'โปรดตรวจการตั้งค่า Apps Script (ต้องเป็น Anyone)', 'error');
+                Swal.fire('เชื่อมต่อล้มเหลว', 'โปรดตรวจการตั้งค่า Apps Script', 'error');
             }
         }
 
         function handleSearch() {
             const term = document.getElementById('searchInput').value.toLowerCase().trim();
             filteredData = allData.filter(row => {
-                const name = String(row[2]).toLowerCase(); 
-                const cid = String(row[6]).toLowerCase();  
+                const name = String(row[4] || '').toLowerCase(); // ชื่อ-สกุล อยู่ index 4
+                const cid = String(row[8] || '').toLowerCase();  // CID อยู่ index 8
                 return name.includes(term) || cid.includes(term);
             });
             currentPage = 1; 
@@ -146,20 +155,28 @@
             const tbody = document.getElementById('tableBody');
             
             if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">ไม่พบข้อมูลที่ค้นหา</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">ไม่พบข้อมูล</td></tr>`;
             } else {
-                // ปรับแต่ง class ของ td แต่ละช่อง เพื่อบังคับขึ้นบรรทัดใหม่เฉพาะสาเหตุ
-                tbody.innerHTML = pageData.map(row => `
+                tbody.innerHTML = pageData.map((row, index) => {
+                    const realIndex = start + index; // เก็บ index ของอาร์เรย์สำหรับการเรียกข้อมูลไปแก้ไข
+                    return `
                     <tr class="border-b hover:bg-blue-50/50 transition-colors">
-                        <td class="p-4 whitespace-nowrap align-top">${row[0] || '-'}</td>
-                        <td class="p-4 whitespace-nowrap align-top">${row[1] || '-'}</td>
-                        <td class="p-4 font-semibold whitespace-nowrap align-top">${row[2] || '-'}</td>
-                        <td class="p-4 whitespace-normal break-words min-w-[250px] align-top text-slate-600 leading-relaxed">${row[3] || '-'}</td>
-                        <td class="p-4 whitespace-nowrap align-top">${row[4] || '-'}</td>
-                        <td class="p-4 whitespace-nowrap align-top">${row[5] || '-'}</td>
-                        <td class="p-4 font-mono text-blue-600 whitespace-nowrap align-top">${row[6] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-sm">${row[0] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-sm">${row[1] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-sm">${row[2] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-sm">${row[3] || '-'}</td>
+                        <td class="p-3 font-semibold whitespace-nowrap align-top text-sm">${row[4] || '-'}</td>
+                        <td class="p-3 whitespace-normal break-words min-w-[200px] align-top text-slate-600 leading-relaxed text-sm">${row[5] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-sm">${row[6] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-sm">${row[7] || '-'}</td>
+                        <td class="p-3 font-mono text-blue-600 whitespace-nowrap align-top text-sm">${row[8] || '-'}</td>
+                        <td class="p-3 whitespace-nowrap align-top text-center">
+                            <button onclick="openModalForEdit(${realIndex})" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+                                แก้ไข
+                            </button>
+                        </td>
                     </tr>
-                `).join('');
+                `}).join('');
             }
             renderPagination();
         }
@@ -175,35 +192,87 @@
             }
         }
 
-        function openModal() { document.getElementById('addModal').classList.replace('hidden', 'flex'); }
+        // แปลงรูปแบบวันที่ที่ดึงจาก Sheet (DD/MM/YYYY) ให้เป็น YYYY-MM-DD เพื่อแสดงในช่อง input type="date"
+        function formatDateForInput(dateStr) {
+            if (!dateStr || dateStr === '-') return '';
+            if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+            let parts = dateStr.split('/');
+            if (parts.length === 3) {
+                let year = parseInt(parts[2]);
+                if (year > 2500) year -= 543; // แปลง พ.ศ. เป็น ค.ศ. แบบคร่าวๆ
+                return `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+            return '';
+        }
+
+        function openModalForAdd() { 
+            currentEditRowIndex = null; // รีเซ็ตสถานะเป็น "เพิ่มข้อมูลใหม่"
+            document.getElementById('modalTitle').innerText = 'บันทึกข้อมูลคดีใหม่';
+            document.getElementById('dataForm').reset();
+            document.getElementById('addModal').classList.replace('hidden', 'flex'); 
+        }
+
+        function openModalForEdit(indexInArray) {
+            const rowData = filteredData[indexInArray];
+            currentEditRowIndex = rowData[9]; // ดึง Row Index ของ Sheet ที่เราแนบมาใน GAS (คอลัมน์ที่ 10)
+            
+            document.getElementById('modalTitle').innerText = 'แก้ไขข้อมูลคดี';
+            
+            // นำข้อมูลเดิมไปใส่ในช่องกรอก
+            const form = document.getElementById('dataForm');
+            form.dateCheck.value = formatDateForInput(rowData[0]);
+            form.dateReceipt.value = formatDateForInput(rowData[1]);
+            form.dateFinish.value = formatDateForInput(rowData[2]);
+            form.datePolice.value = formatDateForInput(rowData[3]);
+            form.fullname.value = rowData[4] || '';
+            form.reason.value = rowData[5] || '';
+            form.doctor.value = rowData[6] || '';
+            form.police.value = rowData[7] || '';
+            form.cid.value = rowData[8] || '';
+
+            document.getElementById('addModal').classList.replace('hidden', 'flex'); 
+        }
+
         function closeModal() { document.getElementById('addModal').classList.replace('flex', 'hidden'); }
 
-        document.getElementById('addForm').onsubmit = async function(e) {
+        document.getElementById('dataForm').onsubmit = async function(e) {
             e.preventDefault();
             const formData = new FormData(this);
-            formData.append('action', 'addData');
+            
+            // เช็คว่าเป็นการแก้ไข หรือ เพิ่มใหม่
+            if (currentEditRowIndex) {
+                formData.append('action', 'editData');
+                formData.append('rowIndex', currentEditRowIndex); // ส่งเลขแถวที่ต้องการแก้ไปให้ Sheet
+            } else {
+                formData.append('action', 'addData');
+            }
+            
             formData.append('password', sessionPassword);
             if(formData.get('cid').length !== 13) return Swal.fire('ผิดพลาด', 'CID ต้องครบ 13 หลัก', 'warning');
-            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
             try {
                 const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: formData });
                 const result = await res.json();
+                
                 if(result.status === 'Success') {
                     Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', 'success');
                     this.reset(); closeModal();
                     
-                    // ดึงข้อมูลใหม่
+                    // ดึงข้อมูลตารางมาแสดงผลใหม่
                     const refreshForm = new FormData();
                     refreshForm.append('action', 'getData');
                     refreshForm.append('password', sessionPassword);
                     const refreshRes = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: refreshForm });
                     const refreshResult = await refreshRes.json();
+                    
                     if (refreshResult.status === 'Success') {
                         allData = refreshResult.rows.reverse(); 
-                        handleSearch(); // รีเฟรชตารางตามคำค้นหาที่อาจจะค้างอยู่
+                        handleSearch(); // รีเฟรชและค้างคำค้นหาเดิมไว้
                     }
                 } else {
-                    Swal.fire('ผิดพลาด', 'บันทึกไม่สำเร็จ หรือรหัสผ่านผิด', 'error');
+                    Swal.fire('ผิดพลาด', 'บันทึกไม่สำเร็จ', 'error');
                 }
             } catch(e) {
                 Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
